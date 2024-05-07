@@ -1,0 +1,38 @@
+Histogram Buckets = 
+// Max Month Number in current context
+VAR dist = SELECTEDVALUE ( DistributionSeries[Value] ) //GENERATESERIES ( -2, 6, 0.1 )
+
+VAR maxMonthNum =
+    MAXX (
+        FILTER (
+            ALL ( '@Calendar' ),
+            '@Calendar'[month-year] = [Max Date Param]
+        ),
+        '@Calendar'[month-number-sequential]
+    )
+
+// Using Values allows us to return the National level as well
+VAR selectGroup = VALUES ( PrimaryDimension[Grouping] )
+
+VAR bucketedVals =
+    FILTER (
+        SUMMARIZE (
+            CALCULATETABLE (
+                TargetTable,
+                FILTER ( ALL ( PrimaryDimension ), [Grouping] IN selectGroup ),
+                FILTER (
+                    ALL ( '@Calendar' ),
+                    [month-number-sequential] >= maxMonthNum - 11 
+                    && [month-number-sequential] <= maxMonthNum
+                )
+            ),
+            PrimaryDimension[Name],
+            '@Calendar'[month-year],
+            "val", CALCULATE ( [Measure of Interest] )
+        ),
+        [val] > 0
+        && [val] > dist
+        && [val] <= dist + .1
+    )
+RETURN
+COUNTROWS ( bucketedVals )
