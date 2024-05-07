@@ -1,0 +1,13 @@
+Target Bell Curve = 
+VAR avg_ = AVERAGEX ( Fact, [Value] )
+RETURN
+VAR distributionSeries = VALUES ( '*Measures'[Value] ) //GENERATESERIES ( 0, 10, 0.01 )
+VAR std_ = STDEVX.P ( Fact, [Value] )
+VAR x = 
+  ADDCOLUMNS (
+      distributionSeries,
+      "y", DIVIDE ( 1, (std_ * SQRT(2 * PI()))) * EXP(-1 * DIVIDE ( ([Value] - avg_)^2, (2 * std_^2)))
+  )
+  RETURN
+  MAXX ( x, [y])
+)
